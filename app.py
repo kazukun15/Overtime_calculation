@@ -59,39 +59,9 @@ for day in range(1, num_days + 1):
     with st.expander(date_str):
         col1, col2 = st.columns(2)
         with col1:
-            start_time = st.selectbox(f"開始時刻 - {date_str}", time_options, index=36, key=f"start_{day}")
-        with col2:
-            end_time = st.selectbox(f"終了時刻 - {date_str}", time_options, index=40, key=f"end_{day}")
-        # 時間差を計算
-        start_dt = datetime.combine(datetime.today(), start_time)
-        end_dt = datetime.combine(datetime.today(), end_time)
-        if end_dt < start_dt:
-            end_dt += timedelta(days=1)  # 日をまたぐ場合の対応
-        overtime = end_dt - start_dt
-        overtime_hours = overtime.total_seconds() / 3600
-        overtime_data.append({
-            "日付": f"{year}/{month:02d}/{day:02d}",
-            "曜日": weekday_names[weekday],
-            "開始時刻": start_time.strftime("%H:%M"),
-            "終了時刻": end_time.strftime("%H:%M"),
-            "残業時間（時間）": round(overtime_hours, 2)
-        })
-
-# データフレームを作成
-df = pd.DataFrame(overtime_data)
-
-# 残業代の計算
-st.subheader("💰 残業代の計算")
-hourly_wage = st.number_input("時給を入力してください（円）", min_value=0, value=1500, step=100)
-overtime_rate = st.number_input("残業代率を入力してください（例：1.25）", min_value=1.0, value=1.25, step=0.05)
-
-if st.button("残業代を計算"):
-    total_overtime_hours = df["残業時間（時間）"].sum()
-    overtime_pay = total_overtime_hours * hourly_wage * overtime_rate
-
-    # 結果を表示
-    st.write(f"総残業時間: {total_overtime_hours:.2f} 時間")
-    st.write(f"残業代: {overtime_pay:,.0f} 円")
-
-    # 詳細なデータを表示
-    st.dataframe(df)
+            # 平日の場合、開始時刻の初期値を17:15に設定
+            if weekday < 5:
+                default_start_index = time_options.index(time(17, 15))
+            else:
+                default_start_index = 36  # 9:00
+            start_time = st.selectbox(f"開始時刻 - {date_str}", time_options, index=default_
