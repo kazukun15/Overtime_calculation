@@ -125,7 +125,8 @@ if st.button("残業代を計算"):
 
     # ダウンロードボタンを表示
     st.download_button(
-        label="📥 データをCSVで保存",
-        data=csv_data
-::contentReference[oaicite:3]{index=3}
- ）
+    label="📥 データをCSVで保存",
+    data=csv_data,
+    file_name='残業記録.csv',
+    mime='text/csv'
+)
