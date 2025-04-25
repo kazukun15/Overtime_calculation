@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import calendar
 from datetime import datetime, time, timedelta
+from io import StringIO
 
 # ページ設定
 st.set_page_config(page_title="残業時間入力アプリ", layout="wide")
@@ -27,12 +28,29 @@ st.markdown("""
 
 st.title("🌙 残業時間入力アプリ")
 
+# 給料表の定義（例として一部のみ記載）
+salary_table = {
+    1: {1: 150000, 2: 155000, 3: 160000},
+    2: {1: 160000, 2: 165000, 3: 170000},
+    3: {1: 170000, 2: 175000, 3: 180000},
+    4: {1: 180000, 2: 185000, 3: 190000},
+    5: {1: 190000, 2: 195000, 3: 200000},
+    6: {1: 200000, 2: 205000, 3: 210000},
+}
+
+# サイドバーで級と号給の選択
+st.sidebar.header("📋 給与情報の入力")
+grade = st.sidebar.selectbox("級を選択してください", list(salary_table.keys()))
+step = st.sidebar.selectbox("号給を選択してください", list(salary_table[grade].keys()))
+
+# 基本給の取得
+base_salary = salary_table[grade][step]
+st.sidebar.write(f"基本給: {base_salary:,} 円")
+
 # 年と月の選択
-col1, col2 = st.columns(2)
-with col1:
-    year = st.number_input("年を入力してください", min_value=2000, max_value=2100, value=datetime.now().year, step=1)
-with col2:
-    month = st.selectbox("月を選択してください", list(range(1, 13)), index=datetime.now().month - 1)
+st.sidebar.header("📅 年月の選択")
+year = st.sidebar.number_input("年を入力してください", min_value=2000, max_value=2100, value=datetime.now().year, step=1)
+month = st.sidebar.selectbox("月を選択してください", list(range(1, 13)), index=datetime.now().month - 1)
 
 # 選択された月の日数を取得
 _, num_days = calendar.monthrange(year, month)
@@ -59,14 +77,13 @@ for day in range(1, num_days + 1):
     with st.expander(date_str):
         col1, col2 = st.columns(2)
         with col1:
-            # 平日の場合、開始時刻の初期値を17:15に設定
-            if weekday < 5:
-                default_start_index = time_options.index(time(17, 15))
-            else:
-                default_start_index = 36  # 9:00
-            start_time = st.selectbox(f"開始時刻 - {date_str}", time_options, index=default_start_index, key=f"start_{day}")
+            # 平日の初期開始時刻を17:15に設定
+            default_start_time = time(17, 15) if weekday < 5 else time(0, 0)
+            start_time = st.selectbox(f"開始時刻 - {date_str}", time_options, index=time_options.index(default_start_time), key=f"start_{day}")
         with col2:
-            end_time = st.selectbox(f"終了時刻 - {date_str}", time_options, index=default_start_index + 4, key=f"end_{day}")
+            # 平日の初期終了時刻を18:15に設定
+            default_end_time = time(18, 15) if weekday < 5 else time(0, 0)
+            end_time = st.selectbox(f"終了時刻 - {date_str}", time_options, index=time_options.index(default_end_time), key=f"end_{day}")
         # 時間差を計算
         start_dt = datetime.combine(datetime.today(), start_time)
         end_dt = datetime.combine(datetime.today(), end_time)
@@ -87,11 +104,11 @@ df = pd.DataFrame(overtime_data)
 
 # 残業代の計算
 st.subheader("💰 残業代の計算")
-hourly_wage = st.number_input("時給を入力してください（円）", min_value=0, value=1500, step=100)
 overtime_rate = st.number_input("残業代率を入力してください（例：1.25）", min_value=1.0, value=1.25, step=0.05)
 
 if st.button("残業代を計算"):
     total_overtime_hours = df["残業時間（時間）"].sum()
+    hourly_wage = base_salary / (38.75 * 4)  # 月の所定労働時間を155時間として計算
     overtime_pay = total_overtime_hours * hourly_wage * overtime_rate
 
     # 結果を表示
@@ -100,3 +117,15 @@ if st.button("残業代を計算"):
 
     # 詳細なデータを表示
     st.dataframe(df)
+
+    # データをCSV形式に変換
+    csv_buffer = StringIO()
+    df.to_csv(csv_buffer, index=False)
+    csv_data = csv_buffer.getvalue()
+
+    # ダウンロードボタンを表示
+    st.download_button(
+        label="📥 データをCSVで保存",
+        data=csv_data
+::contentReference[oaicite:3]{index=3}
+ 
