@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import calendar
-from datetime import datetime
+from datetime import datetime, time, timedelta
 
 # アプリのタイトル
 st.title("残業時間入力アプリ")
@@ -23,7 +23,8 @@ for day in range(1, num_days + 1):
     dates.append({
         "日付": f"{year}/{month:02d}/{day:02d}",
         "曜日": weekday_names[weekday],
-        "残業時間（時間）": 0.0
+        "残業開始時刻": time(18, 0),
+        "残業終了時刻": time(19, 0)
     })
 
 # データフレームを作成
@@ -39,9 +40,20 @@ if st.button("残業代を計算"):
     # 残業代率を入力（例：1.25倍）
     overtime_rate = st.number_input("残業代率を入力してください（例：1.25）", min_value=1.0, value=1.25, step=0.05)
 
-    # 総残業時間を計算
-    total_overtime_hours = edited_df["残業時間（時間）"].sum()
-    # 残業代を計算
+    total_overtime_minutes = 0
+
+    for index, row in edited_df.iterrows():
+        start = row["残業開始時刻"]
+        end = row["残業終了時刻"]
+        # 時間差を計算
+        start_dt = datetime.combine(datetime.today(), start)
+        end_dt = datetime.combine(datetime.today(), end)
+        if end_dt < start_dt:
+            end_dt += timedelta(days=1)  # 日をまたぐ場合の対応
+        overtime = end_dt - start_dt
+        total_overtime_minutes += overtime.total_seconds() / 60
+
+    total_overtime_hours = total_overtime_minutes / 60
     overtime_pay = total_overtime_hours * hourly_wage * overtime_rate
 
     # 結果を表示
